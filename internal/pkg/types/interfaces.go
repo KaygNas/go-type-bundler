@@ -1,0 +1,16 @@
+package types
+
+import "golang.org/x/tools/go/packages"
+
+type Bundler interface {
+	Bundle(pkgs []*packages.Package) (code string, err error)
+}
+
+type ConflictResolver interface {
+	// Resolve conflict names in the package
+	Resolve(name string) (newName string, err error)
+}
+
+type Generator interface {
+	Generate(pkg *packages.Package, cs ConflictResolver) (code string, err error)
+}
