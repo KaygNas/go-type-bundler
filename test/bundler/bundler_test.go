@@ -6,31 +6,49 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/pmezard/go-difflib/difflib"
 	"golang.org/x/tools/go/packages"
 )
 
 func TestBundlerImpl(t *testing.T) {
-	bundler := &bundler.BundlerImpl{}
-	pkgs, pkgErr := packages.Load(&packages.Config{
-		Mode: packages.NeedSyntax | packages.NeedFiles,
-	}, "gotypebundler/examples/bookstore")
+	runTestCase(t, "single_package_single_file")
+	runTestCase(t, "single_package_multiple_file")
+}
 
-	if pkgErr != nil {
-		t.Errorf("Error: %v", pkgErr)
-	}
+func runTestCase(t *testing.T, exampleName string) {
+	t.Run(exampleName, func(t *testing.T) {
+		bundler := &bundler.BundlerImpl{}
+		pkgs, pkgErr := packages.Load(&packages.Config{
+			Mode: packages.NeedSyntax | packages.NeedFiles | packages.NeedDeps | packages.NeedImports,
+		}, "gotypebundler/examples/"+exampleName)
 
-	code, bundleErr := bundler.Bundle(pkgs)
-	if bundleErr != nil {
-		t.Errorf("Error: %v", bundleErr)
-	}
+		if pkgErr != nil {
+			t.Errorf("Fail to load packages. Error: %v", pkgErr)
+		}
 
-	file, _ := filepath.Abs("../../examples/bookstore/expected.code")
-	expected, readErr := os.ReadFile(file)
-	if readErr != nil {
-		t.Errorf("Error: %v", readErr)
-	}
+		code, bundleErr := bundler.Bundle(pkgs)
+		if bundleErr != nil {
+			t.Errorf("Failed to bundle. Error: %v", bundleErr)
+		}
 
-	if code != string(expected) {
-		t.Errorf("Expected:\n%v\nGot:\n%v", string(expected), code)
-	}
+		file, _ := filepath.Abs("../../examples/" + exampleName + "/expected.code")
+		expected, readErr := os.ReadFile(file)
+		if readErr != nil {
+			t.Errorf("Failed to read file. Error: %v", readErr)
+		}
+
+		if code != string(expected) {
+
+			diff := difflib.UnifiedDiff{
+				A:        difflib.SplitLines(string(expected)),
+				B:        difflib.SplitLines(code),
+				FromFile: "Expected",
+				ToFile:   "Got",
+				Context:  3,
+			}
+			diffStr, _ := difflib.GetUnifiedDiffString(diff)
+
+			t.Error("\n" + diffStr)
+		}
+	})
 }

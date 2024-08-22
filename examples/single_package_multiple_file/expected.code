@@ -1,0 +1,9 @@
+package main
+
+type Animal struct {
+	Name string
+}
+
+type Dog struct {
+	Name string
+}
