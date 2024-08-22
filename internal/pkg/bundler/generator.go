@@ -2,6 +2,7 @@ package bundler
 
 import (
 	"bytes"
+	"errors"
 	"go/ast"
 	"go/format"
 	"go/printer"
@@ -18,6 +19,12 @@ type GeneratorImpl struct {
 
 func (g *GeneratorImpl) Generate(pkg *packages.Package, cs types.ConflictResolver) (code string, err error) {
 	utils.Debug("Generating code for package %s %v", pkg.Name, pkg.PkgPath)
+
+	if len(pkg.Errors) > 0 {
+		utils.Debug("Package has errors: %v", pkg.Errors)
+		err = errors.New("package has errors")
+		return
+	}
 
 	var s strings.Builder
 
@@ -42,7 +49,7 @@ func (g *GeneratorImpl) Generate(pkg *packages.Package, cs types.ConflictResolve
 		})
 	}
 
-	formated, formatErr := g.newMethod(s.String())
+	formated, formatErr := g.formatCode(s.String())
 	if formatErr != nil {
 		err = formatErr
 		return
@@ -53,7 +60,7 @@ func (g *GeneratorImpl) Generate(pkg *packages.Package, cs types.ConflictResolve
 	return
 }
 
-func (*GeneratorImpl) newMethod(rawCode string) (string, error) {
+func (*GeneratorImpl) formatCode(rawCode string) (string, error) {
 	utils.Debug("Formating Raw code: \n%s", rawCode)
 
 	formated, formatErr := format.Source([]byte(rawCode))
@@ -65,10 +72,10 @@ func (*GeneratorImpl) newMethod(rawCode string) (string, error) {
 }
 
 func (g *GeneratorImpl) writePackageClause(pkg *packages.Package, s *strings.Builder) {
-	firstFile := pkg.Syntax[0]
-	if firstFile != nil {
+	if len(pkg.Syntax) > 0 {
+		firstFile := pkg.Syntax[0]
 		s.WriteString("package ")
-		s.WriteString(pkg.Syntax[0].Name.Name)
+		s.WriteString(firstFile.Name.Name)
 		s.WriteString("\n\n")
 	}
 }

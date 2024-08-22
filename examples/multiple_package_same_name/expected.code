@@ -1,0 +1,14 @@
+package main
+
+type InternalAnimal_1 struct {
+	Name string
+}
+
+type InternalAnimal_2 struct {
+	Name string
+}
+
+type InternalAnimals struct {
+	A InternalAnimal_1
+	B InternalAnimal_2
+}

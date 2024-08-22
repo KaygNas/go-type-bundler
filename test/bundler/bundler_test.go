@@ -1,8 +1,9 @@
-package test
+package bundler_test
 
 import (
 	"gotypebundler/internal/pkg/bundler"
 	"os"
+	"path"
 	"path/filepath"
 	"testing"
 
@@ -10,31 +11,46 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-func TestBundlerImpl(t *testing.T) {
+func TestSinglePackageSingleFile(t *testing.T) {
 	runTestCase(t, "single_package_single_file")
+}
+func TestSinglePackageMultipleFile(t *testing.T) {
 	runTestCase(t, "single_package_multiple_file")
+}
+
+func TestMultiplePackageDeep(t *testing.T) {
+	runTestCase(t, "multiple_package_deep")
+}
+
+func TestMultiplePackageSameName(t *testing.T) {
+	runTestCase(t, "multiple_package_same_name")
 }
 
 func runTestCase(t *testing.T, exampleName string) {
 	t.Run(exampleName, func(t *testing.T) {
+		root := "../../examples/"
+
 		bundler := &bundler.BundlerImpl{}
 		pkgs, pkgErr := packages.Load(&packages.Config{
 			Mode: packages.NeedSyntax | packages.NeedFiles | packages.NeedDeps | packages.NeedImports,
-		}, "gotypebundler/examples/"+exampleName)
+		}, path.Join(root, exampleName))
 
 		if pkgErr != nil {
 			t.Errorf("Fail to load packages. Error: %v", pkgErr)
+			return
 		}
 
 		code, bundleErr := bundler.Bundle(pkgs)
 		if bundleErr != nil {
 			t.Errorf("Failed to bundle. Error: %v", bundleErr)
+			return
 		}
 
-		file, _ := filepath.Abs("../../examples/" + exampleName + "/expected.code")
+		file, _ := filepath.Abs(root + exampleName + "/expected.code")
 		expected, readErr := os.ReadFile(file)
 		if readErr != nil {
 			t.Errorf("Failed to read file. Error: %v", readErr)
+			return
 		}
 
 		if code != string(expected) {
