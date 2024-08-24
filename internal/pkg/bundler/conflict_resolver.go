@@ -32,7 +32,11 @@ func (cr *ConflictResolverImpl) RegisterPkgNameSpace(pkgId types.PkgID, pkgNs ty
 	ns, isExist := cr.pkgNameSpaces[pkgId]
 
 	if !isExist {
-		ns = pkgNs
+		if pkgNs == "" {
+			ns = types.PkgNameSpace(pkgId)
+		} else {
+			ns = pkgNs
+		}
 		cr.pkgNameSpaces[pkgId] = ns
 	}
 

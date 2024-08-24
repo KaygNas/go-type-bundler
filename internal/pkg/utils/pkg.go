@@ -9,9 +9,13 @@ import (
 func NameOfPackage(pkg *packages.Package) string {
 	pkgName := pkg.Name
 
-	if pkgName == "" && len(pkg.Syntax) > 0 {
-		firstFile := pkg.Syntax[0]
-		pkgName = firstFile.Name.Name
+	if pkgName == "" {
+		if len(pkg.Syntax) > 0 {
+			firstFile := pkg.Syntax[0]
+			pkgName = firstFile.Name.Name
+		} else {
+			pkgName = pkg.ID
+		}
 	}
 
 	return pkgName

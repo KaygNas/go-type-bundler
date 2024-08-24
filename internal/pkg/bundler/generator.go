@@ -105,7 +105,11 @@ func (g *GeneratorImpl) convertExpr(expr ast.Expr, selectorToPkg utils.SelectorT
 	if selectorExpr, isSelectorExpr := expr.(*ast.SelectorExpr); isSelectorExpr {
 		sel := selectorExpr.Sel
 		selector := selectorExpr.X.(*ast.Ident).Name
-		selectorPkg := selectorToPkg[selector]
+		selectorPkg, isSelectorPkgExist := selectorToPkg[selector]
+		if !isSelectorPkgExist {
+			utils.Warn("Selector package %s not found", selector)
+			return expr
+		}
 		sel.Name = g.ctx.cs.ResolveIdentName(types.PkgID(selectorPkg.ID), sel.Name)
 		return selectorExpr.Sel
 	}
