@@ -30,6 +30,9 @@ func TestMultiplePackageLitStruct(t *testing.T) {
 func TestMultiplePackageAlias(t *testing.T) {
 	runTestCase(t, "multiple_package_alias")
 }
+func TestMultiplePackageStar(t *testing.T) {
+	runTestCase(t, "multiple_package_star")
+}
 
 func runTestCase(t *testing.T, exampleName string) {
 	t.Run(exampleName, func(t *testing.T) {
