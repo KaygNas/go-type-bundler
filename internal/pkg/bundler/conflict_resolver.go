@@ -8,27 +8,27 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-type ConflictResolverImpl struct {
+type conflictResolverImpl struct {
 	pkgNameSpaces     map[types.PkgID]types.PkgNameSpace
 	pkgNameSpaceStore map[types.PkgNameSpace]map[types.PkgID]int
 }
 
-func NewConflictResolver() *ConflictResolverImpl {
-	return &ConflictResolverImpl{
+func NewConflictResolver() types.ConflictResolver {
+	return &conflictResolverImpl{
 		pkgNameSpaces:     make(map[types.PkgID]types.PkgNameSpace),
 		pkgNameSpaceStore: make(map[types.PkgNameSpace]map[types.PkgID]int),
 	}
 }
 
-func (cr *ConflictResolverImpl) RegisterPkgs(pkgs []*packages.Package) {
+func (cr *conflictResolverImpl) RegisterPkgs(pkgs []*packages.Package) {
 	for _, pkg := range pkgs {
 		importPkgs := utils.CollectMapValues(pkg.Imports)
 		cr.RegisterPkgs(importPkgs)
-		cr.RegisterPkgNameSpace(types.PkgID(pkg.ID), types.PkgNameSpace(utils.NameOfPackage(pkg)))
+		cr.registerPkgNameSpace(types.PkgID(pkg.ID), types.PkgNameSpace(utils.NameOfPackage(pkg)))
 	}
 }
 
-func (cr *ConflictResolverImpl) RegisterPkgNameSpace(pkgId types.PkgID, pkgNs types.PkgNameSpace) {
+func (cr *conflictResolverImpl) registerPkgNameSpace(pkgId types.PkgID, pkgNs types.PkgNameSpace) {
 	ns, isExist := cr.pkgNameSpaces[pkgId]
 
 	if !isExist {
@@ -52,7 +52,7 @@ func (cr *ConflictResolverImpl) RegisterPkgNameSpace(pkgId types.PkgID, pkgNs ty
 	}
 }
 
-func (cr *ConflictResolverImpl) ResolveIdentName(pkgId types.PkgID, name string) (newName string) {
+func (cr *conflictResolverImpl) ResolveIdentName(pkgId types.PkgID, name string) (newName string) {
 	ns, isNsExist := cr.pkgNameSpaces[pkgId]
 	newName = name
 

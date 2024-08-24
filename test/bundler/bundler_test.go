@@ -41,7 +41,7 @@ func runTestCase(t *testing.T, exampleName string) {
 	t.Run(exampleName, func(t *testing.T) {
 		root := "../../examples/"
 
-		bundler := &bundler.BundlerImpl{}
+		bundler := bundler.NewBundler()
 		pkgs, pkgErr := packages.Load(&packages.Config{
 			Mode: packages.NeedSyntax | packages.NeedFiles | packages.NeedDeps | packages.NeedImports,
 		}, path.Join(root, exampleName))
@@ -51,7 +51,7 @@ func runTestCase(t *testing.T, exampleName string) {
 			return
 		}
 
-		code, bundleErr := bundler.Bundle(pkgs)
+		code, bundleErr := bundler.Bundle(pkgs[0])
 		if bundleErr != nil {
 			t.Errorf("Failed to bundle. Error: %v", bundleErr)
 			return

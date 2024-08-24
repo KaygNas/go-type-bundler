@@ -1,29 +1,35 @@
 package bundler
 
 import (
+	"gotypebundler/internal/pkg/types"
 	"gotypebundler/internal/pkg/utils"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
 )
 
-type BundlerImpl struct {
+type bundlerImpl struct {
+	Generator        types.Generator
+	ConflictResolver types.ConflictResolver
 }
 
-func (b *BundlerImpl) Bundle(pkgs []*packages.Package) (code string, err error) {
-
-	str := strings.Builder{}
-	cs := NewConflictResolver()
-	generator := &GeneratorImpl{}
-
-	cs.RegisterPkgs(pkgs)
-
-	if len(pkgs) > 0 {
-		str.WriteString(generator.GeneratePackageClause(pkgs[0]))
+func NewBundler() types.Bundler {
+	return &bundlerImpl{
+		Generator:        NewGenerator(),
+		ConflictResolver: NewConflictResolver(),
 	}
+}
 
-	packages.Visit(pkgs, func(pkg *packages.Package) bool {
-		genCode, genErr := generator.Generate(pkg, cs)
+func (b *bundlerImpl) Bundle(pkg *packages.Package) (code string, err error) {
+	str := strings.Builder{}
+	pkgsWrapper := []*packages.Package{pkg}
+
+	b.ConflictResolver.RegisterPkgs(pkgsWrapper)
+
+	str.WriteString(b.Generator.GeneratePackageClause(pkg))
+
+	packages.Visit(pkgsWrapper, func(pkg *packages.Package) bool {
+		genCode, genErr := b.Generator.GenerateContent(pkg, b.ConflictResolver)
 		if genErr != nil {
 			err = genErr
 			return false

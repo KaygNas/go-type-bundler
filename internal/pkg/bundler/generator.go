@@ -13,21 +13,26 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-type GeneratorImpl struct {
+type generatorImpl struct {
+	types.Generator
 	ctx struct {
 		pkg              *packages.Package
-		cs               types.ConflictResolver
+		cr               types.ConflictResolver
 		s                strings.Builder
 		typeSpecRenaming map[string]string
 	}
 }
 
-func (g *GeneratorImpl) Generate(pkg *packages.Package, cs types.ConflictResolver) (code string, err error) {
+func NewGenerator() types.Generator {
+	return &generatorImpl{}
+}
+
+func (g *generatorImpl) GenerateContent(pkg *packages.Package, cs types.ConflictResolver) (code string, err error) {
 	utils.Debug("Generating code for package %s %v", utils.NameOfPackage(pkg), pkg.ID)
 
 	g.ctx.pkg = pkg
-	g.ctx.cs = cs
-	g.ctx.s = *new(strings.Builder)
+	g.ctx.cr = cs
+	g.ctx.s = strings.Builder{}
 	g.ctx.typeSpecRenaming = make(map[string]string)
 
 	if len(pkg.Errors) > 0 {
@@ -43,7 +48,7 @@ func (g *GeneratorImpl) Generate(pkg *packages.Package, cs types.ConflictResolve
 	return
 }
 
-func (g *GeneratorImpl) GeneratePackageClause(pkg *packages.Package) string {
+func (g *generatorImpl) GeneratePackageClause(pkg *packages.Package) string {
 	pkgName := utils.NameOfPackage(pkg)
 	packageClaus := ""
 
@@ -54,7 +59,7 @@ func (g *GeneratorImpl) GeneratePackageClause(pkg *packages.Package) string {
 	return packageClaus
 }
 
-func (g *GeneratorImpl) writePkgTypeDecls(pkg *packages.Package) {
+func (g *generatorImpl) writePkgTypeDecls(pkg *packages.Package) {
 	for _, astFile := range pkg.Syntax {
 		ast.SortImports(pkg.Fset, astFile)
 		selectorToPkg := utils.CreateSelectorToPkg(astFile, pkg)
@@ -70,7 +75,7 @@ func (g *GeneratorImpl) writePkgTypeDecls(pkg *packages.Package) {
 	}
 }
 
-func (g *GeneratorImpl) writeTypeDecl(typeDecl *ast.GenDecl, selectorToPkg utils.SelectorToPkg) {
+func (g *generatorImpl) writeTypeDecl(typeDecl *ast.GenDecl, selectorToPkg utils.SelectorToPkg) {
 	typeSpecs := make([]*ast.TypeSpec, 0, len(typeDecl.Specs))
 
 	for _, spec := range typeDecl.Specs {
@@ -82,7 +87,7 @@ func (g *GeneratorImpl) writeTypeDecl(typeDecl *ast.GenDecl, selectorToPkg utils
 
 		// setting up the renaming map
 		oldName := typeSpec.Name.Name
-		newName := g.ctx.cs.ResolveIdentName(types.PkgID(g.ctx.pkg.ID), oldName)
+		newName := g.ctx.cr.ResolveIdentName(types.PkgID(g.ctx.pkg.ID), oldName)
 		if _, isExist := g.ctx.typeSpecRenaming[oldName]; isExist {
 			utils.Warn("Type %s already renamed to %s", oldName, newName)
 		} else {
@@ -101,7 +106,7 @@ func (g *GeneratorImpl) writeTypeDecl(typeDecl *ast.GenDecl, selectorToPkg utils
 	g.ctx.s.Write([]byte("\n\n"))
 }
 
-func (g *GeneratorImpl) convertExpr(expr ast.Expr, selectorToPkg utils.SelectorToPkg) ast.Expr {
+func (g *generatorImpl) convertExpr(expr ast.Expr, selectorToPkg utils.SelectorToPkg) ast.Expr {
 	if selectorExpr, isSelectorExpr := expr.(*ast.SelectorExpr); isSelectorExpr {
 		sel := selectorExpr.Sel
 		selector := selectorExpr.X.(*ast.Ident).Name
@@ -110,7 +115,7 @@ func (g *GeneratorImpl) convertExpr(expr ast.Expr, selectorToPkg utils.SelectorT
 			utils.Warn("Selector package %s not found", selector)
 			return expr
 		}
-		sel.Name = g.ctx.cs.ResolveIdentName(types.PkgID(selectorPkg.ID), sel.Name)
+		sel.Name = g.ctx.cr.ResolveIdentName(types.PkgID(selectorPkg.ID), sel.Name)
 		return selectorExpr.Sel
 	}
 
@@ -136,7 +141,7 @@ func (g *GeneratorImpl) convertExpr(expr ast.Expr, selectorToPkg utils.SelectorT
 	return expr
 }
 
-func (g *GeneratorImpl) convertStructTypeExpr(structType *ast.StructType, selectorToPkg utils.SelectorToPkg) *ast.StructType {
+func (g *generatorImpl) convertStructTypeExpr(structType *ast.StructType, selectorToPkg utils.SelectorToPkg) *ast.StructType {
 	for _, field := range structType.Fields.List {
 		if childStructType, isStructType := field.Type.(*ast.StructType); isStructType {
 			g.convertStructTypeExpr(childStructType, selectorToPkg)

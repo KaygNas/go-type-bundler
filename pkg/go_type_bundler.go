@@ -2,6 +2,7 @@ package gotypebundler
 
 import (
 	"gotypebundler/internal/pkg/bundler"
+	"gotypebundler/internal/pkg/types"
 	"io/fs"
 	"os"
 
@@ -16,13 +17,13 @@ type Config struct {
 }
 
 type GoTypeBundler struct {
-	Bundler *bundler.BundlerImpl
+	Bundler types.Bundler
 	Config  *Config
 }
 
 func New(conf *Config) *GoTypeBundler {
 	b := &GoTypeBundler{
-		Bundler: &bundler.BundlerImpl{},
+		Bundler: bundler.NewBundler(),
 		Config:  conf,
 	}
 	return b
@@ -37,7 +38,7 @@ func (b *GoTypeBundler) Bundle() (_ any, err error) {
 		return
 	}
 
-	code, bundleErr := b.Bundler.Bundle(pkgs)
+	code, bundleErr := b.Bundler.Bundle(pkgs[0])
 	if bundleErr != nil {
 		err = bundleErr
 		return
