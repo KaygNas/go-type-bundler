@@ -6,9 +6,12 @@ type Bundler interface {
 	Bundle(pkgs []*packages.Package) (code string, err error)
 }
 
+type PkgID string
+type PkgNameSpace string
 type ConflictResolver interface {
+	RegisterPkgNameSpace(pkgId PkgID, ns PkgNameSpace)
 	// Resolve conflict names in the package
-	Resolve(name string) (newName string, err error)
+	ResolveIdentName(pkgId PkgID, name string) (newName string, err error)
 }
 
 type Generator interface {
