@@ -80,6 +80,7 @@ func (g *GeneratorImpl) writeTypeDecl(typeDecl *ast.GenDecl, selectorToPkg utils
 		if !isTypeSpec {
 			continue
 		}
+		typeSpec.Name.Name = g.ctx.cs.ResolveIdentName(types.PkgID(g.ctx.pkg.ID), typeSpec.Name.Name)
 		typeSpec.Type = g.convertSelectorExpr(typeSpec.Type, selectorToPkg)
 	}
 
