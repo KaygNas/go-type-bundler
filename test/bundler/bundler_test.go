@@ -24,6 +24,12 @@ func TestMultiplePackageDeep(t *testing.T) {
 func TestMultiplePackageSameName(t *testing.T) {
 	runTestCase(t, "multiple_package_same_name")
 }
+func TestMultiplePackageLitStruct(t *testing.T) {
+	runTestCase(t, "multiple_package_lit_struct")
+}
+func TestMultiplePackageAlias(t *testing.T) {
+	runTestCase(t, "multiple_package_alias")
+}
 
 func runTestCase(t *testing.T, exampleName string) {
 	t.Run(exampleName, func(t *testing.T) {
