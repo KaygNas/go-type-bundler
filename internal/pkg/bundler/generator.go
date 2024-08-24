@@ -29,7 +29,7 @@ func (g *GeneratorImpl) Generate(pkg *packages.Package, cs types.ConflictResolve
 
 	g.writePackageClause(pkg, &s)
 
-	g.writePkgTypes(pkg, &s, cs)
+	g.writePkgTypeDecls(pkg, &s, cs)
 
 	formated, formatErr := utils.FormatCode(s.String())
 	if formatErr != nil {
@@ -51,26 +51,23 @@ func (g *GeneratorImpl) writePackageClause(pkg *packages.Package, s *strings.Bui
 	}
 }
 
-func (g *GeneratorImpl) writePkgTypes(pkg *packages.Package, s *strings.Builder, cs types.ConflictResolver) {
+func (g *GeneratorImpl) writePkgTypeDecls(pkg *packages.Package, s *strings.Builder, cs types.ConflictResolver) {
 	//TODO: rename types which import external types
 	for _, pkg := range pkg.Imports {
-		g.writePkgTypes(pkg, s, cs)
+		g.writePkgTypeDecls(pkg, s, cs)
 	}
 
 	for _, astFile := range pkg.Syntax {
-		ast.Inspect(astFile, func(n ast.Node) (gonext bool) {
-			decl, isGenDecl := n.(*ast.GenDecl)
+		ast.SortImports(pkg.Fset, astFile)
+		for _, decl := range astFile.Decls {
+			decl, isGenDecl := decl.(*ast.GenDecl)
 
 			if !isGenDecl || decl.Tok != token.TYPE {
-				gonext = true
-				return
+				continue
 			}
 
 			g.writeTypeDecl(decl, s, cs)
-
-			gonext = false
-			return
-		})
+		}
 	}
 }
 
@@ -80,13 +77,7 @@ func (g *GeneratorImpl) writeTypeDecl(typeDecl *ast.GenDecl, s *strings.Builder,
 		if !isTypeSpec {
 			continue
 		}
-
-		structType, isStructType := typeSpec.Type.(*ast.StructType)
-		if !isStructType {
-			continue
-		}
-
-		removePackageSelector(structType)
+		typeSpec.Type = convertSelectorExpr(typeSpec.Type)
 	}
 
 	var buf bytes.Buffer
@@ -95,17 +86,28 @@ func (g *GeneratorImpl) writeTypeDecl(typeDecl *ast.GenDecl, s *strings.Builder,
 	s.Write([]byte("\n\n"))
 }
 
-// remove the package selector
-func removePackageSelector(ts *ast.StructType) {
-	for _, field := range ts.Fields.List {
-		structType, isStructType := field.Type.(*ast.StructType)
-		if isStructType {
-			removePackageSelector(structType)
+func convertSelectorExpr(expr ast.Expr) ast.Expr {
+	if selectorExpr, isSelectorExpr := expr.(*ast.SelectorExpr); isSelectorExpr {
+		return selectorExpr.Sel
+	}
+
+	if starExpr, isStarExpr := expr.(*ast.StarExpr); isStarExpr {
+		starExpr.X = convertSelectorExpr(starExpr.X)
+		return starExpr
+	} else if structType, isStructType := expr.(*ast.StructType); isStructType {
+		return convertStructTypeSelectorExpr(structType)
+	}
+
+	return expr
+}
+
+func convertStructTypeSelectorExpr(structType *ast.StructType) *ast.StructType {
+	for _, field := range structType.Fields.List {
+		if childStructType, isStructType := field.Type.(*ast.StructType); isStructType {
+			convertStructTypeSelectorExpr(childStructType)
 		} else {
-			selector, isSelector := field.Type.(*ast.SelectorExpr)
-			if isSelector {
-				field.Type = selector.Sel
-			}
+			field.Type = convertSelectorExpr(field.Type)
 		}
 	}
+	return structType
 }
