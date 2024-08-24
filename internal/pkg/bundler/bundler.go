@@ -12,22 +12,29 @@ type BundlerImpl struct {
 func (b *BundlerImpl) Bundle(pkgs []*packages.Package) (code string, err error) {
 
 	str := strings.Builder{}
-	cs := &ConflictResolverImpl{}
+	cs := NewConflictResolver()
 	generator := &GeneratorImpl{}
 
-	for _, pkg := range pkgs {
+	cs.RegisterPkgs(pkgs)
+
+	if len(pkgs) > 0 {
+		str.WriteString(generator.GeneratePackageClause(pkgs[0]))
+	}
+
+	packages.Visit(pkgs, func(pkg *packages.Package) bool {
 		genCode, genErr := generator.Generate(pkg, cs)
 		if genErr != nil {
 			err = genErr
-			return
+			return false
 		}
 
 		_, writeErr := str.WriteString(genCode)
 		if writeErr != nil {
 			err = writeErr
-			return
+			return false
 		}
-	}
+		return true
+	}, nil)
 
 	code = str.String()
 

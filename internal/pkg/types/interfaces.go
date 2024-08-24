@@ -11,7 +11,7 @@ type PkgNameSpace string
 type ConflictResolver interface {
 	RegisterPkgNameSpace(pkgId PkgID, ns PkgNameSpace)
 	// Resolve conflict names in the package
-	ResolveIdentName(pkgId PkgID, name string) (newName string, err error)
+	ResolveIdentName(pkgId PkgID, name string) (newName string)
 }
 
 type Generator interface {
