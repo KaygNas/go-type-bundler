@@ -15,9 +15,10 @@ import (
 
 type GeneratorImpl struct {
 	ctx struct {
-		pkg *packages.Package
-		cs  types.ConflictResolver
-		s   strings.Builder
+		pkg              *packages.Package
+		cs               types.ConflictResolver
+		s                strings.Builder
+		typeSpecRenaming map[string]string
 	}
 }
 
@@ -27,6 +28,7 @@ func (g *GeneratorImpl) Generate(pkg *packages.Package, cs types.ConflictResolve
 	g.ctx.pkg = pkg
 	g.ctx.cs = cs
 	g.ctx.s = *new(strings.Builder)
+	g.ctx.typeSpecRenaming = make(map[string]string)
 
 	if len(pkg.Errors) > 0 {
 		utils.Debug("Package has errors: %v", pkg.Errors)
@@ -69,13 +71,28 @@ func (g *GeneratorImpl) writePkgTypeDecls(pkg *packages.Package) {
 }
 
 func (g *GeneratorImpl) writeTypeDecl(typeDecl *ast.GenDecl, selectorToPkg utils.SelectorToPkg) {
+	typeSpecs := make([]*ast.TypeSpec, 0, len(typeDecl.Specs))
+
 	for _, spec := range typeDecl.Specs {
 		typeSpec, isTypeSpec := spec.(*ast.TypeSpec)
 		if !isTypeSpec {
 			continue
 		}
-		typeSpec.Name.Name = g.ctx.cs.ResolveIdentName(types.PkgID(g.ctx.pkg.ID), typeSpec.Name.Name)
-		typeSpec.Type = g.convertSelectorExpr(typeSpec.Type, selectorToPkg)
+		typeSpecs = append(typeSpecs, typeSpec)
+
+		// setting up the renaming map
+		oldName := typeSpec.Name.Name
+		newName := g.ctx.cs.ResolveIdentName(types.PkgID(g.ctx.pkg.ID), oldName)
+		if _, isExist := g.ctx.typeSpecRenaming[oldName]; isExist {
+			utils.Warn("Type %s already renamed to %s", oldName, newName)
+		} else {
+			g.ctx.typeSpecRenaming[oldName] = newName
+		}
+	}
+
+	for _, typeSpec := range typeSpecs {
+		typeSpec.Name.Name = g.ctx.typeSpecRenaming[typeSpec.Name.Name]
+		typeSpec.Type = g.convertExpr(typeSpec.Type, selectorToPkg)
 	}
 
 	var buf bytes.Buffer
@@ -84,7 +101,7 @@ func (g *GeneratorImpl) writeTypeDecl(typeDecl *ast.GenDecl, selectorToPkg utils
 	g.ctx.s.Write([]byte("\n\n"))
 }
 
-func (g *GeneratorImpl) convertSelectorExpr(expr ast.Expr, selectorToPkg utils.SelectorToPkg) ast.Expr {
+func (g *GeneratorImpl) convertExpr(expr ast.Expr, selectorToPkg utils.SelectorToPkg) ast.Expr {
 	if selectorExpr, isSelectorExpr := expr.(*ast.SelectorExpr); isSelectorExpr {
 		sel := selectorExpr.Sel
 		selector := selectorExpr.X.(*ast.Ident).Name
@@ -94,21 +111,33 @@ func (g *GeneratorImpl) convertSelectorExpr(expr ast.Expr, selectorToPkg utils.S
 	}
 
 	if starExpr, isStarExpr := expr.(*ast.StarExpr); isStarExpr {
-		starExpr.X = g.convertSelectorExpr(starExpr.X, selectorToPkg)
+		starExpr.X = g.convertExpr(starExpr.X, selectorToPkg)
 		return starExpr
-	} else if structType, isStructType := expr.(*ast.StructType); isStructType {
-		return g.convertStructTypeSelectorExpr(structType, selectorToPkg)
+	}
+
+	if structType, isStructType := expr.(*ast.StructType); isStructType {
+		return g.convertStructTypeExpr(structType, selectorToPkg)
+	}
+
+	// the type spec is rename in the writeTypeDecl function
+	// therefore any ident that was renamed should be rename here
+	if identType, isIdentType := expr.(*ast.Ident); isIdentType {
+		newName, isExist := g.ctx.typeSpecRenaming[identType.Name]
+		if isExist {
+			identType.Name = newName
+		}
+		return identType
 	}
 
 	return expr
 }
 
-func (g *GeneratorImpl) convertStructTypeSelectorExpr(structType *ast.StructType, selectorToPkg utils.SelectorToPkg) *ast.StructType {
+func (g *GeneratorImpl) convertStructTypeExpr(structType *ast.StructType, selectorToPkg utils.SelectorToPkg) *ast.StructType {
 	for _, field := range structType.Fields.List {
 		if childStructType, isStructType := field.Type.(*ast.StructType); isStructType {
-			g.convertStructTypeSelectorExpr(childStructType, selectorToPkg)
+			g.convertStructTypeExpr(childStructType, selectorToPkg)
 		} else {
-			field.Type = g.convertSelectorExpr(field.Type, selectorToPkg)
+			field.Type = g.convertExpr(field.Type, selectorToPkg)
 		}
 	}
 	return structType
