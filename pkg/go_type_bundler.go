@@ -29,7 +29,9 @@ func New(conf *Config) *GoTypeBundler {
 }
 
 func (b *GoTypeBundler) Bundle() (_ any, err error) {
-	pkgs, loadErr := packages.Load(&packages.Config{}, b.Config.Entry)
+	pkgs, loadErr := packages.Load(&packages.Config{
+		Mode: packages.NeedSyntax | packages.NeedFiles | packages.NeedDeps | packages.NeedImports,
+	}, b.Config.Entry)
 	if loadErr != nil {
 		err = loadErr
 		return
