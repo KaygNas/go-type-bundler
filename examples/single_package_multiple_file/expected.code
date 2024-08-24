@@ -1,5 +1,5 @@
 package main
 
-type Animal struct{ Name string }
+type Animal_main struct{ Name string }
 
-type Dog struct{ Name string }
+type Dog_main struct{ Name string }

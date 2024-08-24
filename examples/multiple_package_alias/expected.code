@@ -1,14 +1,14 @@
 package main
 
-type Internal_1_Animal struct{ Name string }
+type Type_A_main = Internal_1_Animal_internal_1
 
-type Internal_2_Animal struct{ Name string }
+type Type_B_main Internal_2_Animal_internal_2
 
-type Type_A = Internal_1_Animal
-
-type Type_B Internal_2_Animal
-
-type Animal struct {
-	A Type_A
-	B Type_B
+type Animal_main struct {
+	A Type_A_main
+	B Type_B_main
 }
+
+type Internal_1_Animal_internal_1 struct{ Name string }
+
+type Internal_2_Animal_internal_2 struct{ Name string }
