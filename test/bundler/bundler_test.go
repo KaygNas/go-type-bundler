@@ -33,6 +33,12 @@ func TestMultiplePackageAlias(t *testing.T) {
 func TestMultiplePackageStar(t *testing.T) {
 	runTestCase(t, "multiple_package_star")
 }
+func TestMultiplePackageThirdParty(t *testing.T) {
+	runTestCase(t, "multiple_package_third_party")
+}
+func TestMultiplePackageAnoymousField(t *testing.T) {
+	runTestCase(t, "multiple_package_anoymous_field")
+}
 
 func runTestCase(t *testing.T, exampleName string) {
 	t.Run(exampleName, func(t *testing.T) {
