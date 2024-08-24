@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"go/ast"
-	"go/format"
 	"go/printer"
 	"go/token"
 	"gotypebundler/internal/pkg/types"
@@ -32,7 +31,7 @@ func (g *GeneratorImpl) Generate(pkg *packages.Package, cs types.ConflictResolve
 
 	g.writePkgTypes(pkg, &s, cs)
 
-	formated, formatErr := g.formatCode(s.String())
+	formated, formatErr := utils.FormatCode(s.String())
 	if formatErr != nil {
 		err = formatErr
 		return
@@ -109,15 +108,4 @@ func removePackageSelector(ts *ast.StructType) {
 			}
 		}
 	}
-}
-
-func (*GeneratorImpl) formatCode(rawCode string) (string, error) {
-	formated, formatErr := format.Source([]byte(rawCode))
-	if formatErr != nil {
-		return "", formatErr
-	}
-
-	utils.Debug("Raw code formated: \n%s", formated)
-
-	return string(formated), nil
 }

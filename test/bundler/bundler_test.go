@@ -2,6 +2,7 @@ package bundler_test
 
 import (
 	"gotypebundler/internal/pkg/bundler"
+	"gotypebundler/internal/pkg/utils"
 	"os"
 	"path"
 	"path/filepath"
@@ -17,11 +18,9 @@ func TestSinglePackageSingleFile(t *testing.T) {
 func TestSinglePackageMultipleFile(t *testing.T) {
 	runTestCase(t, "single_package_multiple_file")
 }
-
 func TestMultiplePackageDeep(t *testing.T) {
 	runTestCase(t, "multiple_package_deep")
 }
-
 func TestMultiplePackageSameName(t *testing.T) {
 	runTestCase(t, "multiple_package_same_name")
 }
@@ -53,10 +52,18 @@ func runTestCase(t *testing.T, exampleName string) {
 			return
 		}
 
-		if code != string(expected) {
+		formatedExpected, formatErr := utils.FormatCode(string(expected))
+		if formatErr != nil {
+			t.Errorf("Failed to format expected code. Error: %v", formatErr)
+			return
+		}
 
+		utils.Debug("Expected:\n%v\n", formatedExpected)
+		utils.Debug("Got:\n%v\n", code)
+
+		if code != string(expected) {
 			diff := difflib.UnifiedDiff{
-				A:        difflib.SplitLines(string(expected)),
+				A:        difflib.SplitLines(formatedExpected),
 				B:        difflib.SplitLines(code),
 				FromFile: "Expected",
 				ToFile:   "Got",
