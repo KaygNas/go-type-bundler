@@ -3,11 +3,15 @@ package types
 import "golang.org/x/tools/go/packages"
 
 type Bundler interface {
-	Bundle(pkg *packages.Package) (code string, err error)
+	Bundle(pkg *packages.Package, entryTypes []string) (code string, err error)
 }
 
 type PkgID string
 type PkgNameSpace string
+
+type Collector interface {
+	Collect(pkg *packages.Package, entryTypes []string) *packages.Package
+}
 type ConflictResolver interface {
 	RegisterPkgs(pkgs []*packages.Package)
 	// Resolve conflict names in the package

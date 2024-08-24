@@ -51,7 +51,7 @@ func runTestCase(t *testing.T, exampleName string) {
 			return
 		}
 
-		code, bundleErr := bundler.Bundle(pkgs[0])
+		code, bundleErr := bundler.Bundle(pkgs[0], []string{})
 		if bundleErr != nil {
 			t.Errorf("Failed to bundle. Error: %v", bundleErr)
 			return

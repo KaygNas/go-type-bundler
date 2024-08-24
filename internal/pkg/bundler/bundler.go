@@ -11,18 +11,21 @@ import (
 type bundlerImpl struct {
 	Generator        types.Generator
 	ConflictResolver types.ConflictResolver
+	Collector        types.Collector
 }
 
 func NewBundler() types.Bundler {
 	return &bundlerImpl{
 		Generator:        NewGenerator(),
 		ConflictResolver: NewConflictResolver(),
+		Collector:        NewCollector(),
 	}
 }
 
-func (b *bundlerImpl) Bundle(pkg *packages.Package) (code string, err error) {
-	str := strings.Builder{}
+func (b *bundlerImpl) Bundle(pkg *packages.Package, entryTypes []string) (code string, err error) {
+	pkg = b.Collector.Collect(pkg, entryTypes)
 	pkgsWrapper := []*packages.Package{pkg}
+	str := strings.Builder{}
 
 	b.ConflictResolver.RegisterPkgs(pkgsWrapper)
 

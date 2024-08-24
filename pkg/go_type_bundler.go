@@ -12,6 +12,8 @@ import (
 type Config struct {
 	// Path to the directory containing the Go files to bundle
 	Entry string
+	// List of types to bundle
+	Types []string
 	// Path to the output file
 	Output string
 }
@@ -38,7 +40,7 @@ func (b *GoTypeBundler) Bundle() (_ any, err error) {
 		return
 	}
 
-	code, bundleErr := b.Bundler.Bundle(pkgs[0])
+	code, bundleErr := b.Bundler.Bundle(pkgs[0], b.Config.Types)
 	if bundleErr != nil {
 		err = bundleErr
 		return
