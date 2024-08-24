@@ -1,6 +1,7 @@
 package bundler
 
 import (
+	"gotypebundler/internal/pkg/utils"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
@@ -36,7 +37,13 @@ func (b *BundlerImpl) Bundle(pkgs []*packages.Package) (code string, err error) 
 		return true
 	}, nil)
 
-	code = str.String()
+	formated, formatErr := utils.FormatCode(str.String())
+	if formatErr != nil {
+		err = formatErr
+		return
+	}
+
+	code = formated
 
 	return
 }

@@ -36,13 +36,7 @@ func (g *GeneratorImpl) Generate(pkg *packages.Package, cs types.ConflictResolve
 
 	g.writePkgTypeDecls(pkg)
 
-	formated, formatErr := utils.FormatCode(g.ctx.s.String())
-	if formatErr != nil {
-		err = formatErr
-		return
-	}
-
-	code = formated
+	code = g.ctx.s.String()
 
 	return
 }

@@ -61,10 +61,9 @@ func (cr *ConflictResolverImpl) ResolveIdentName(pkgId types.PkgID, name string)
 		return
 	}
 
-	newName = string(ns)
+	newName = name + "_" + string(ns)
 	if idx > 0 {
 		newName += strconv.Itoa(idx)
 	}
-	newName += "_" + name
 	return
 }
