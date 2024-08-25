@@ -144,6 +144,18 @@ func (c *collectorImpl) collectPkgFromExpr(pkg *packages.Package, expr ast.Expr,
 		return requiredPkgs
 	}
 
+	if fnType, isFnType := expr.(*ast.FuncType); isFnType {
+		return c.collectPkgFromFuncTypeExpr(pkg, fnType, selectorToPkg)
+	}
+
+	if chanType, isChanType := expr.(*ast.ChanType); isChanType {
+		return c.collectPkgFromExpr(pkg, chanType.Value, selectorToPkg)
+	}
+
+	if interfaceType, isInterfaceType := expr.(*ast.InterfaceType); isInterfaceType {
+		return c.collectPkgFromInterfaceTypeExpr(pkg, interfaceType, selectorToPkg)
+	}
+
 	if ident, isIdent := expr.(*ast.Ident); isIdent {
 		requiredPkgs := make([]*requiredPkg, 0)
 		requiredPkgs = append(requiredPkgs, &requiredPkg{
@@ -167,6 +179,35 @@ func (c *collectorImpl) collectPkgFromStructTypeExpr(pkg *packages.Package, stru
 			requiredPkgs = append(requiredPkgs, pkgs...)
 		}
 	}
+	return requiredPkgs
+}
+
+func (c *collectorImpl) collectPkgFromInterfaceTypeExpr(pkg *packages.Package, interfaceType *ast.InterfaceType, selectorToPkg map[string]*packages.Package) []*requiredPkg {
+	requiredPkgs := make([]*requiredPkg, 0)
+	for _, method := range interfaceType.Methods.List {
+		pkgs := c.collectPkgFromExpr(pkg, method.Type, selectorToPkg)
+		requiredPkgs = append(requiredPkgs, pkgs...)
+	}
+	return requiredPkgs
+}
+
+func (c *collectorImpl) collectPkgFromFuncTypeExpr(pkg *packages.Package, funcType *ast.FuncType, selectorToPkg utils.SelectorToPkg) []*requiredPkg {
+	requiredPkgs := make([]*requiredPkg, 0)
+
+	if funcType.Params != nil {
+		for _, param := range funcType.Params.List {
+			pkgs := c.collectPkgFromExpr(pkg, param.Type, selectorToPkg)
+			requiredPkgs = append(requiredPkgs, pkgs...)
+		}
+	}
+
+	if funcType.Results != nil {
+		for _, result := range funcType.Results.List {
+			pkgs := c.collectPkgFromExpr(pkg, result.Type, selectorToPkg)
+			requiredPkgs = append(requiredPkgs, pkgs...)
+		}
+	}
+
 	return requiredPkgs
 }
 

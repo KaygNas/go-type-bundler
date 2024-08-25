@@ -84,7 +84,9 @@ func (g *generatorImpl) writeTypeDecl(typeDecl *ast.GenDecl, selectorToPkg utils
 			continue
 		}
 		typeSpecs = append(typeSpecs, typeSpec)
+	}
 
+	for _, typeSpec := range typeSpecs {
 		// setting up the renaming map
 		oldName := typeSpec.Name.Name
 		newName := g.ctx.cr.ResolveIdentName(types.PkgID(g.ctx.pkg.ID), oldName)
@@ -144,6 +146,19 @@ func (g *generatorImpl) convertExpr(expr ast.Expr, selectorToPkg utils.SelectorT
 		return mapType
 	}
 
+	if funcType, isFuncType := expr.(*ast.FuncType); isFuncType {
+		return g.convertFuncTypeExpr(funcType, selectorToPkg)
+	}
+
+	if chanType, isChanType := expr.(*ast.ChanType); isChanType {
+		chanType.Value = g.convertExpr(chanType.Value, selectorToPkg)
+		return chanType
+	}
+
+	if interfaceType, isInterfaceType := expr.(*ast.InterfaceType); isInterfaceType {
+		return g.convertInerfaceTypeExpr(interfaceType, selectorToPkg)
+	}
+
 	// the type spec is rename in the writeTypeDecl function
 	// therefore any ident that was renamed should be rename here
 	if identType, isIdentType := expr.(*ast.Ident); isIdentType {
@@ -166,4 +181,25 @@ func (g *generatorImpl) convertStructTypeExpr(structType *ast.StructType, select
 		}
 	}
 	return structType
+}
+
+func (g *generatorImpl) convertFuncTypeExpr(funcType *ast.FuncType, selectorToPkg utils.SelectorToPkg) *ast.FuncType {
+	if funcType.Params != nil {
+		for _, field := range funcType.Params.List {
+			field.Type = g.convertExpr(field.Type, selectorToPkg)
+		}
+	}
+	if funcType.Results != nil {
+		for _, field := range funcType.Results.List {
+			field.Type = g.convertExpr(field.Type, selectorToPkg)
+		}
+	}
+	return funcType
+}
+
+func (g *generatorImpl) convertInerfaceTypeExpr(interfaceType *ast.InterfaceType, selectorToPkg utils.SelectorToPkg) *ast.InterfaceType {
+	for _, method := range interfaceType.Methods.List {
+		method.Type = g.convertExpr(method.Type, selectorToPkg)
+	}
+	return interfaceType
 }
