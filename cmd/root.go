@@ -25,7 +25,7 @@ var types []string
 
 func init() {
 	generateCmd := &cobra.Command{
-		Use:   "bundle -e <entry> -t <types> -o <output>",
+		Use:   "bundle -e <entry> -t <type1,type2> -o <output>",
 		Short: "Bundle the specified package to a single Go file containing specific types.",
 		Long:  "Bundle the specified package to a single Go file containing specific types.",
 		Run: func(cmd *cobra.Command, args []string) {
