@@ -1,0 +1,20 @@
+package main
+
+type Animal_main struct {
+	A interface {
+		Fn(Internal_1_Animal_internal_1)
+	}
+	B interface {
+		interface {
+			Fn(Internal_1_Animal_internal_1) Internal_2_Animal_internal_2
+		}
+	}
+}
+
+type Internal_1_Animal_internal_1 struct {
+	Name string
+}
+
+type Internal_2_Animal_internal_2 struct {
+	Name string
+}

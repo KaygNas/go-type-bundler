@@ -45,6 +45,15 @@ func TestMultiplePackageSlice(t *testing.T) {
 func TestMultiplePackageMap(t *testing.T) {
 	runTestCase(t, "multiple_package_map")
 }
+func TestMultiplePackageInterface(t *testing.T) {
+	runTestCase(t, "multiple_package_interface")
+}
+func TestMultiplePackageChan(t *testing.T) {
+	runTestCase(t, "multiple_package_chan")
+}
+func TestMultiplePackageFn(t *testing.T) {
+	runTestCase(t, "multiple_package_fn")
+}
 func TestMultiplePackageUnusedTypes(t *testing.T) {
 	runTestCase(t, "multiple_package_unused_types", "Animal")
 }

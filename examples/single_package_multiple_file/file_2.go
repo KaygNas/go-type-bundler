@@ -1,14 +1,22 @@
 package main
 
 type Dog struct {
-	StructType struct {
-		Name string
-	}
+	LitType       string
 	ArrayType     [5]int
 	PointerType   *int
-	FunctionType  func()
-	InterfaceType interface{}
 	MapType       map[string]int
-	ChannelType   chan int
 	SliceType     []int
+	ChannelType   chan int
+	InterfaceType interface{}
+	FunctionType  func()
+	StructType    struct {
+		LitType       string
+		ArrayType     [5]int
+		PointerType   *int
+		MapType       map[string]int
+		SliceType     []int
+		ChannelType   chan int
+		InterfaceType interface{}
+		FunctionType  func()
+	}
 }
