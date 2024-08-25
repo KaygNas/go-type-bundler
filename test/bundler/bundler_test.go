@@ -36,6 +36,15 @@ func TestMultiplePackagePointer(t *testing.T) {
 func TestMultiplePackageAnoymousField(t *testing.T) {
 	runTestCase(t, "multiple_package_anoymous_field")
 }
+func TestMultiplePackageArray(t *testing.T) {
+	runTestCase(t, "multiple_package_array")
+}
+func TestMultiplePackageSlice(t *testing.T) {
+	runTestCase(t, "multiple_package_slice")
+}
+func TestMultiplePackageMap(t *testing.T) {
+	runTestCase(t, "multiple_package_map")
+}
 func TestMultiplePackageUnusedTypes(t *testing.T) {
 	runTestCase(t, "multiple_package_unused_types", "Animal")
 }
