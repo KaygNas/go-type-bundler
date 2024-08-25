@@ -1,8 +1,11 @@
 package main
 
+type LocalType_A_main = Internal_1_Animal_internal_1
+
 type Animal_main struct {
 	A []Internal_1_Animal_internal_1
 	B [][]Internal_2_Animal_internal_2
+        C []LocalType_A_main
 }
 
 type Internal_1_Animal_internal_1 struct {

@@ -5,7 +5,10 @@ import (
 	internal_2 "gotypebundler/examples/multiple_package_slice/internal/pkg_2"
 )
 
+type LocalType_A = internal_1.Internal_1_Animal
+
 type Animal struct {
 	A []internal_1.Internal_1_Animal
 	B [][]internal_2.Internal_2_Animal
+	C []LocalType_A
 }

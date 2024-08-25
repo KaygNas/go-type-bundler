@@ -2,17 +2,148 @@ package main
 
 type Type_A_main = Duration_time
 
-type Type_B_main Weekday_time
+type Type_B_main Timer_time
 
 type Animal_main struct {
-        A Type_A_main
-        B Type_B_main
+	A Type_A_main
+	B Type_B_main
 }
 
-// A Weekday specifies a day of the week (Sunday = 0, ...).
-type Weekday_time int
+// Interface to timers implemented in package runtime.
+// Must be in sync with ../runtime/time.go:/^type timer
+type runtimeTimer_time struct {
+	pp       uintptr
+	when     int64
+	period   int64
+	f        func(any, uintptr) // NOTE: must not be closure
+	arg      any
+	seq      uintptr
+	nextwhen int64
+	status   uint32
+}
+
+// The Timer type represents a single event.
+// When the Timer expires, the current time will be sent on C,
+// unless the Timer was created by AfterFunc.
+// A Timer must be created with NewTimer or AfterFunc.
+type Timer_time struct {
+	C <-chan Time_time
+	r runtimeTimer_time
+}
+
+// A Time represents an instant in time with nanosecond precision.
+//
+// Programs using times should typically store and pass them as values,
+// not pointers. That is, time variables and struct fields should be of
+// type time.Time, not *time.Time.
+//
+// A Time value can be used by multiple goroutines simultaneously except
+// that the methods GobDecode, UnmarshalBinary, UnmarshalJSON and
+// UnmarshalText are not concurrency-safe.
+//
+// Time instants can be compared using the Before, After, and Equal methods.
+// The Sub method subtracts two instants, producing a Duration.
+// The Add method adds a Time and a Duration, producing a Time.
+//
+// The zero value of type Time is January 1, year 1, 00:00:00.000000000 UTC.
+// As this time is unlikely to come up in practice, the IsZero method gives
+// a simple way of detecting a time that has not been initialized explicitly.
+//
+// Each time has an associated Location. The methods Local, UTC, and In return a
+// Time with a specific Location. Changing the Location of a Time value with
+// these methods does not change the actual instant it represents, only the time
+// zone in which to interpret it.
+//
+// Representations of a Time value saved by the GobEncode, MarshalBinary,
+// MarshalJSON, and MarshalText methods store the Time.Location's offset, but not
+// the location name. They therefore lose information about Daylight Saving Time.
+//
+// In addition to the required “wall clock” reading, a Time may contain an optional
+// reading of the current process's monotonic clock, to provide additional precision
+// for comparison or subtraction.
+// See the “Monotonic Clocks” section in the package documentation for details.
+//
+// Note that the Go == operator compares not just the time instant but also the
+// Location and the monotonic clock reading. Therefore, Time values should not
+// be used as map or database keys without first guaranteeing that the
+// identical Location has been set for all values, which can be achieved
+// through use of the UTC or Local method, and that the monotonic clock reading
+// has been stripped by setting t = t.Round(0). In general, prefer t.Equal(u)
+// to t == u, since t.Equal uses the most accurate comparison available and
+// correctly handles the case when only one of its arguments has a monotonic
+// clock reading.
+type Time_time struct {
+	// wall and ext encode the wall time seconds, wall time nanoseconds,
+	// and optional monotonic clock reading in nanoseconds.
+	//
+	// From high to low bit position, wall encodes a 1-bit flag (hasMonotonic),
+	// a 33-bit seconds field, and a 30-bit wall time nanoseconds field.
+	// The nanoseconds field is in the range [0, 999999999].
+	// If the hasMonotonic bit is 0, then the 33-bit field must be zero
+	// and the full signed 64-bit wall seconds since Jan 1 year 1 is stored in ext.
+	// If the hasMonotonic bit is 1, then the 33-bit field holds a 33-bit
+	// unsigned wall seconds since Jan 1 year 1885, and ext holds a
+	// signed 64-bit monotonic clock reading, nanoseconds since process start.
+	wall uint64
+	ext  int64
+
+	// loc specifies the Location that should be used to
+	// determine the minute, hour, month, day, and year
+	// that correspond to this Time.
+	// The nil location means UTC.
+	// All UTC times are represented with loc==nil, never loc==&utcLoc.
+	loc *Location_time
+}
 
 // A Duration represents the elapsed time between two instants
 // as an int64 nanosecond count. The representation limits the
 // largest representable duration to approximately 290 years.
 type Duration_time int64
+
+// A Location maps time instants to the zone in use at that time.
+// Typically, the Location represents the collection of time offsets
+// in use in a geographical area. For many Locations the time offset varies
+// depending on whether daylight savings time is in use at the time instant.
+//
+// Location is used to provide a time zone in a printed Time value and for
+// calculations involving intervals that may cross daylight savings time
+// boundaries.
+type Location_time struct {
+	name string
+	zone []zone_time
+	tx   []zoneTrans_time
+
+	// The tzdata information can be followed by a string that describes
+	// how to handle DST transitions not recorded in zoneTrans.
+	// The format is the TZ environment variable without a colon; see
+	// https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html.
+	// Example string, for America/Los_Angeles: PST8PDT,M3.2.0,M11.1.0
+	extend string
+
+	// Most lookups will be for the current time.
+	// To avoid the binary search through tx, keep a
+	// static one-element cache that gives the correct
+	// zone for the time when the Location was created.
+	// if cacheStart <= t < cacheEnd,
+	// lookup can return cacheZone.
+	// The units for cacheStart and cacheEnd are seconds
+	// since January 1, 1970 UTC, to match the argument
+	// to lookup.
+	cacheStart int64
+	cacheEnd   int64
+	cacheZone  *zone_time
+}
+
+// A zone represents a single time zone such as CET.
+type zone_time struct {
+	name   string // abbreviated name, "CET"
+	offset int    // seconds east of UTC
+	isDST  bool   // is this zone Daylight Savings Time?
+}
+
+// A zoneTrans represents a single time zone transition.
+type zoneTrans_time struct {
+	when         int64 // transition time, in seconds since 1970 GMT
+	index        uint8 // the index of the zone that goes into effect at that time
+	isstd, isutc bool  // ignored - no idea what these mean
+}

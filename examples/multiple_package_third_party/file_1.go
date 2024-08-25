@@ -5,7 +5,7 @@ import (
 )
 
 type Type_A = time.Duration
-type Type_B time.Weekday
+type Type_B time.Timer
 
 type Animal struct {
 	A Type_A

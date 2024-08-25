@@ -6,6 +6,6 @@ import (
 )
 
 type Animal struct {
-	A chan internal_1.Internal_1_Animal
-	B chan chan internal_2.Internal_2_Animal
+	A <-chan internal_1.Internal_1_Animal
+	B <-chan chan internal_2.Internal_2_Animal
 }

@@ -1,8 +1,8 @@
 package main
 
 type Animal_main struct {
-	A chan Internal_1_Animal_internal_1
-	B chan chan Internal_2_Animal_internal_2
+	A <-chan Internal_1_Animal_internal_1
+	B <-chan chan Internal_2_Animal_internal_2
 }
 
 type Internal_1_Animal_internal_1 struct {

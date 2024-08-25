@@ -1,10 +1,13 @@
 package main
 
+type LocalType_A_main = Internal_1_Animal_internal_1
+
 type Animal_main struct {
 	A map[string]Internal_1_Animal_internal_1
         B map[string]map[int]Internal_1_Animal_internal_1
 	C map[Internal_1_Animal_internal_1]Internal_2_Animal_internal_2
         D map[string]map[Internal_1_Animal_internal_1]Internal_2_Animal_internal_2
+        E map[string]LocalType_A_main
 }
 
 type Internal_1_Animal_internal_1 struct {
