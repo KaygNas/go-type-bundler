@@ -5,6 +5,7 @@ import (
 	"go/token"
 	"gotypebundler/internal/pkg/types"
 	"gotypebundler/internal/pkg/utils"
+	"sort"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -23,15 +24,43 @@ func NewCollector() types.Collector {
 	return &collectorImpl{}
 }
 
-func (c *collectorImpl) Collect(pkg *packages.Package, entryTypes []string) *packages.Package {
-	requiredTypeDecls := c.collectTypeDeclsByNames(pkg, entryTypes)
-	newPkg := c.filterTypeSpecs(pkg, requiredTypeDecls)
-	return newPkg
+func (c *collectorImpl) Collect(pkg *packages.Package, entryTypes []string) []*packages.Package {
+	if len(entryTypes) == 0 {
+		entryTypes = c.collectAllTypes(pkg)
+	}
+	requiredPackages := c.collectRequiredPackages(pkg, entryTypes)
+	requiredPackages = append(requiredPackages, &requiredPkg{pkg: pkg, typeNames: entryTypes})
+	requiredPackages = c.tidyRequiredPkgs(requiredPackages)
+	newPkgs := c.filterTypeSpecs(requiredPackages)
+	return newPkgs
 }
 
-// collectTypeDeclsByNames collects the type declarations by the given type names.
+func (c *collectorImpl) collectAllTypes(pkg *packages.Package) []string {
+	typeNames := make([]string, 0)
+	for _, astFile := range pkg.Syntax {
+		for _, decl := range astFile.Decls {
+			genDecl, isGenDecl := decl.(*ast.GenDecl)
+
+			if !isGenDecl {
+				continue
+			}
+			if genDecl.Tok != token.TYPE {
+				continue
+			}
+
+			for _, spec := range genDecl.Specs {
+				if typeSpec, ok := spec.(*ast.TypeSpec); ok {
+					typeNames = append(typeNames, typeSpec.Name.Name)
+				}
+			}
+		}
+	}
+	return typeNames
+}
+
+// collectRequiredPackages collects the type declarations by the given type names.
 // this func will recursively collect the type declarations from the imported packages.
-func (c *collectorImpl) collectTypeDeclsByNames(pkg *packages.Package, typeNames []string) requiredTypeSpecs {
+func (c *collectorImpl) collectRequiredPackages(pkg *packages.Package, typeNames []string) []*requiredPkg {
 	requiredTypeNames := make(map[string]bool)
 	for _, typeName := range typeNames {
 		requiredTypeNames[typeName] = true
@@ -67,18 +96,12 @@ func (c *collectorImpl) collectTypeDeclsByNames(pkg *packages.Package, typeNames
 		}
 	}
 
-	// foreach there decl
-	// if the decl has selector expression which meas it is an imported package
-	// then collect the type declarations from the imported package
-	// and add the collected type declarations to the typeDecls
 	for _, requiredPkg := range requiredPkgs {
-		requiredTypeSpecsFromPkg := c.collectTypeDeclsByNames(requiredPkg.pkg, requiredPkg.typeNames)
-		for typeSpec := range requiredTypeSpecsFromPkg {
-			requiredTypeSpecs[typeSpec] = true
-		}
+		requiredTypeSpecsFromPkg := c.collectRequiredPackages(requiredPkg.pkg, requiredPkg.typeNames)
+		requiredPkgs = append(requiredPkgs, requiredTypeSpecsFromPkg...)
 	}
 
-	return requiredTypeSpecs
+	return requiredPkgs
 }
 
 func (c *collectorImpl) collectPkgFromExpr(pkg *packages.Package, expr ast.Expr, selectorToPkg utils.SelectorToPkg) []*requiredPkg {
@@ -132,38 +155,78 @@ func (c *collectorImpl) collectPkgFromStructTypeExpr(pkg *packages.Package, stru
 	return requiredPkgs
 }
 
+func (c *collectorImpl) tidyRequiredPkgs(requiredPkgs []*requiredPkg) []*requiredPkg {
+	pkgMap := make(map[string]*requiredPkg)
+	for _, requiredPkg := range requiredPkgs {
+		if _, ok := pkgMap[requiredPkg.pkg.ID]; !ok {
+			pkgMap[requiredPkg.pkg.ID] = requiredPkg
+		} else {
+			mergedTypeNames := pkgMap[requiredPkg.pkg.ID].typeNames
+			mergedTypeNames = append(mergedTypeNames, requiredPkg.typeNames...)
+			pkgMap[requiredPkg.pkg.ID].typeNames = mergedTypeNames
+		}
+	}
+
+	tidyRequiredPkgs := make([]*requiredPkg, 0)
+
+	pkgIds := make([]string, 0, len(pkgMap))
+	for pkgId := range pkgMap {
+		pkgIds = append(pkgIds, pkgId)
+	}
+	sort.StringSlice(pkgIds).Sort()
+
+	for _, id := range pkgIds {
+		tidyRequiredPkgs = append(tidyRequiredPkgs, pkgMap[id])
+	}
+
+	return tidyRequiredPkgs
+}
+
 // filterTypeSpecs filters out the declarations that are not required.
-func (c *collectorImpl) filterTypeSpecs(pkg *packages.Package, requiredTypeSpecs requiredTypeSpecs) *packages.Package {
-	if len(requiredTypeSpecs) == 0 {
-		return pkg
+func (c *collectorImpl) filterTypeSpecs(requiredPackages []*requiredPkg) []*packages.Package {
+	if len(requiredPackages) == 0 {
+		return []*packages.Package{}
 	}
 
-	newImports := make(map[string]*packages.Package)
-	for key, imp := range pkg.Imports {
-		newImports[key] = c.filterTypeSpecs(imp, requiredTypeSpecs)
-	}
-	pkg.Imports = newImports
+	pkgs := make([]*packages.Package, 0)
+	for _, requiredPkg := range requiredPackages {
+		pkg := requiredPkg.pkg
+		requiredNames := make(map[string]bool)
+		for _, typeName := range requiredPkg.typeNames {
+			requiredNames[typeName] = true
+		}
 
-	for _, astFile := range pkg.Syntax {
-		newDecls := make([]ast.Decl, 0)
-		for i := 0; i < len(astFile.Decls); i++ {
-			if genDecl, ok := astFile.Decls[i].(*ast.GenDecl); ok {
-				typeSpecs := make([]ast.Spec, 0)
-				for _, spec := range genDecl.Specs {
-					if typeSpec, ok := spec.(*ast.TypeSpec); ok {
-						if _, required := requiredTypeSpecs[typeSpec]; required {
-							typeSpecs = append(typeSpecs, typeSpec)
+		for _, astFile := range pkg.Syntax {
+			newDecls := make([]ast.Decl, 0)
+			for i := 0; i < len(astFile.Decls); i++ {
+				if genDecl, ok := astFile.Decls[i].(*ast.GenDecl); ok {
+
+					// import declarations should be included in the new file
+					// so that the selector expressions can be resolved.
+					if genDecl.Tok == token.IMPORT {
+						newDecls = append(newDecls, genDecl)
+						continue
+					}
+
+					typeSpecs := make([]ast.Spec, 0)
+					for _, spec := range genDecl.Specs {
+						if typeSpec, ok := spec.(*ast.TypeSpec); ok {
+							if _, required := requiredNames[typeSpec.Name.Name]; required {
+								typeSpecs = append(typeSpecs, typeSpec)
+							}
 						}
 					}
-				}
-				if len(typeSpecs) > 0 {
-					genDecl.Specs = typeSpecs
-					newDecls = append(newDecls, genDecl)
+					if len(typeSpecs) > 0 {
+						genDecl.Specs = typeSpecs
+						newDecls = append(newDecls, genDecl)
+					}
 				}
 			}
+			astFile.Decls = newDecls
 		}
-		astFile.Decls = newDecls
+
+		pkgs = append(pkgs, pkg)
 	}
 
-	return pkg
+	return pkgs
 }

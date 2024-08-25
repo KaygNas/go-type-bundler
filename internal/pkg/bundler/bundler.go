@@ -23,15 +23,14 @@ func NewBundler() types.Bundler {
 }
 
 func (b *bundlerImpl) Bundle(pkg *packages.Package, entryTypes []string) (code string, err error) {
-	pkg = b.Collector.Collect(pkg, entryTypes)
-	pkgsWrapper := []*packages.Package{pkg}
+	pkgs := b.Collector.Collect(pkg, entryTypes)
 	str := strings.Builder{}
 
-	b.ConflictResolver.RegisterPkgs(pkgsWrapper)
+	b.ConflictResolver.RegisterPkgs(pkgs)
 
 	str.WriteString(b.Generator.GeneratePackageClause(pkg))
 
-	packages.Visit(pkgsWrapper, func(pkg *packages.Package) bool {
+	packages.Visit(pkgs, func(pkg *packages.Package) bool {
 		genCode, genErr := b.Generator.GenerateContent(pkg, b.ConflictResolver)
 		if genErr != nil {
 			err = genErr

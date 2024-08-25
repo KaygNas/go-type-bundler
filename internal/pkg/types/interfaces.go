@@ -10,7 +10,7 @@ type PkgID string
 type PkgNameSpace string
 
 type Collector interface {
-	Collect(pkg *packages.Package, entryTypes []string) *packages.Package
+	Collect(pkg *packages.Package, entryTypes []string) []*packages.Package
 }
 type ConflictResolver interface {
 	RegisterPkgs(pkgs []*packages.Package)
