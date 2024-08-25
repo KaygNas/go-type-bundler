@@ -30,8 +30,8 @@ func TestMultiplePackageLitStruct(t *testing.T) {
 func TestMultiplePackageAlias(t *testing.T) {
 	runTestCase(t, "multiple_package_alias")
 }
-func TestMultiplePackageStar(t *testing.T) {
-	runTestCase(t, "multiple_package_star")
+func TestMultiplePackagePointer(t *testing.T) {
+	runTestCase(t, "multiple_package_pointer")
 }
 func TestMultiplePackageAnoymousField(t *testing.T) {
 	runTestCase(t, "multiple_package_anoymous_field")

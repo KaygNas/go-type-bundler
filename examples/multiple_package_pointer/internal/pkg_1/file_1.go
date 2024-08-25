@@ -1,6 +1,6 @@
 package internal_1
 
-import internal_1_1 "gotypebundler/examples/multiple_package_star/internal/pkg_1/pkg_1_1"
+import internal_1_1 "gotypebundler/examples/multiple_package_pointer/internal/pkg_1/pkg_1_1"
 
 type Internal_1_Animal struct {
 	Name  string
