@@ -1,0 +1,18 @@
+package main
+
+type Type_A_main = Duration_time
+
+type Type_B_main Weekday_time
+
+type Animal_main struct {
+	A Type_A_main
+	B Type_B_main
+}
+
+// A Weekday specifies a day of the week (Sunday = 0, ...).
+type Weekday_time int
+
+// A Duration represents the elapsed time between two instants
+// as an int64 nanosecond count. The representation limits the
+// largest representable duration to approximately 290 years.
+type Duration_time int64

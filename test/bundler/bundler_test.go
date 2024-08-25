@@ -42,6 +42,9 @@ func TestMultiplePackageUnusedTypes(t *testing.T) {
 func TestMultiplePackageUnusedTypesIndirect(t *testing.T) {
 	runTestCase(t, "multiple_package_unused_types_indirect", "Animal")
 }
+func TestMultiplePackageThirdParty(t *testing.T) {
+	runTestCase(t, "multiple_package_third_party", "Animal")
+}
 
 func runTestCase(t *testing.T, exampleName string, entryTypes ...string) {
 	t.Run(exampleName, func(t *testing.T) {
