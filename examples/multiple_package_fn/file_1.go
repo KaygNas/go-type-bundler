@@ -7,5 +7,5 @@ import (
 
 type Animal struct {
 	A func(internal_1.Internal_1_Animal)
-	B func(func(internal_1.Internal_1_Animal)) internal_2.Internal_2_Animal
+	B func(func(param1 internal_1.Internal_1_Animal)) internal_2.Internal_2_Animal
 }

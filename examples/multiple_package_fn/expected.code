@@ -2,7 +2,7 @@ package main
 
 type Animal_main struct {
 	A func(Internal_1_Animal_internal_1)
-	B func(func(Internal_1_Animal_internal_1)) Internal_2_Animal_internal_2
+	B func(func(param1 Internal_1_Animal_internal_1)) Internal_2_Animal_internal_2
 }
 
 type Internal_1_Animal_internal_1 struct {
