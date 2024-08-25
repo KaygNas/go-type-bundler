@@ -1,10 +1,14 @@
 package main
 
 type InternalAnimals_main struct {
-	A InternalAnimal_internal
-	B InternalAnimal_internal1
+        A InternalAnimal_internal
+        B InternalAnimal_internal1
 }
 
-type InternalAnimal_internal struct{ Name string }
+type InternalAnimal_internal struct {
+        Name string
+}
 
-type InternalAnimal_internal1 struct{ Name string }
+type InternalAnimal_internal1 struct {
+        Name string
+}

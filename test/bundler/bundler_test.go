@@ -82,7 +82,7 @@ func runTestCase(t *testing.T, exampleName string, entryTypes ...string) {
 		utils.Debug("Expected:\n%v\n", formatedExpected)
 		utils.Debug("Got:\n%v\n", code)
 
-		if code != string(expected) {
+		if code != formatedExpected {
 			diff := difflib.UnifiedDiff{
 				A:        difflib.SplitLines(formatedExpected),
 				B:        difflib.SplitLines(code),

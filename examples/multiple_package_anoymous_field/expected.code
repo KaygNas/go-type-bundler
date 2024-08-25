@@ -1,13 +1,19 @@
 package main
 
-type Dog_main struct{ DogName string }
-
-type Animal_main struct {
-	A Internal_2_Animal_internal_2
-	Internal_1_Animal_internal_1
-	Dog_main
+type Dog_main struct {
+        DogName string
 }
 
-type Internal_1_Animal_internal_1 struct{ Name string }
+type Animal_main struct {
+        A Internal_2_Animal_internal_2
+        Internal_1_Animal_internal_1
+        Dog_main
+}
 
-type Internal_2_Animal_internal_2 struct{ Name string }
+type Internal_1_Animal_internal_1 struct {
+        Name string
+}
+
+type Internal_2_Animal_internal_2 struct {
+        Name string
+}

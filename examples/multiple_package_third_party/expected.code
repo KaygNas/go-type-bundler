@@ -5,8 +5,8 @@ type Type_A_main = Duration_time
 type Type_B_main Weekday_time
 
 type Animal_main struct {
-	A Type_A_main
-	B Type_B_main
+        A Type_A_main
+        B Type_B_main
 }
 
 // A Weekday specifies a day of the week (Sunday = 0, ...).
