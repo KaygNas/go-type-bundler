@@ -36,8 +36,14 @@ func TestMultiplePackageStar(t *testing.T) {
 func TestMultiplePackageAnoymousField(t *testing.T) {
 	runTestCase(t, "multiple_package_anoymous_field")
 }
+func TestMultiplePackageUnusedTypes(t *testing.T) {
+	runTestCase(t, "multiple_package_unused_types", "Animal")
+}
+func TestMultiplePackageUnusedTypesIndirect(t *testing.T) {
+	runTestCase(t, "multiple_package_unused_types_indirect", "Animal")
+}
 
-func runTestCase(t *testing.T, exampleName string) {
+func runTestCase(t *testing.T, exampleName string, entryTypes ...string) {
 	t.Run(exampleName, func(t *testing.T) {
 		root := "../../examples/"
 
@@ -51,7 +57,7 @@ func runTestCase(t *testing.T, exampleName string) {
 			return
 		}
 
-		code, bundleErr := bundler.Bundle(pkgs[0], []string{})
+		code, bundleErr := bundler.Bundle(pkgs[0], entryTypes)
 		if bundleErr != nil {
 			t.Errorf("Failed to bundle. Error: %v", bundleErr)
 			return
