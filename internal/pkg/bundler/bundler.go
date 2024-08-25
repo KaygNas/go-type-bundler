@@ -30,20 +30,19 @@ func (b *bundlerImpl) Bundle(pkg *packages.Package, entryTypes []string) (code s
 
 	str.WriteString(b.Generator.GeneratePackageClause(pkg))
 
-	packages.Visit(pkgs, func(pkg *packages.Package) bool {
+	for _, pkg := range pkgs {
 		genCode, genErr := b.Generator.GenerateContent(pkg, b.ConflictResolver)
 		if genErr != nil {
 			err = genErr
-			return false
+			return
 		}
 
 		_, writeErr := str.WriteString(genCode)
 		if writeErr != nil {
 			err = writeErr
-			return false
+			return
 		}
-		return true
-	}, nil)
+	}
 
 	formated, formatErr := utils.FormatCode(str.String())
 	if formatErr != nil {

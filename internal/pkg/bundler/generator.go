@@ -101,7 +101,7 @@ func (g *generatorImpl) writeTypeDecl(typeDecl *ast.GenDecl, selectorToPkg utils
 	}
 
 	var buf bytes.Buffer
-	printer.Fprint(&buf, token.NewFileSet(), typeDecl)
+	printer.Fprint(&buf, g.ctx.pkg.Fset, typeDecl)
 	g.ctx.s.Write(buf.Bytes())
 	g.ctx.s.Write([]byte("\n\n"))
 }
