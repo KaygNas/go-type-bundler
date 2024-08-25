@@ -23,12 +23,11 @@ func NewBundler() types.Bundler {
 }
 
 func (b *bundlerImpl) Bundle(pkg *packages.Package, entryTypes []string) (code string, err error) {
-	pkgs := b.Collector.Collect(pkg, entryTypes)
 	str := strings.Builder{}
-
-	b.ConflictResolver.RegisterPkgs(pkgs)
-
 	str.WriteString(b.Generator.GeneratePackageClause(pkg))
+
+	pkgs := b.Collector.Collect(pkg, entryTypes)
+	b.ConflictResolver.RegisterPkgs(pkgs)
 
 	for _, pkg := range pkgs {
 		genCode, genErr := b.Generator.GenerateContent(pkg, b.ConflictResolver)

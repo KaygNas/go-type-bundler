@@ -2,6 +2,7 @@ package utils
 
 import (
 	"go/ast"
+	"go/token"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -39,4 +40,30 @@ func CreateSelectorToPkg(astFile *ast.File, pkg *packages.Package) SelectorToPkg
 		selectorToPkg[importedName] = importedPkg
 	}
 	return selectorToPkg
+}
+
+func CollectTypeDeclsFromAstFile(astFile *ast.File) (genDecls []*ast.GenDecl) {
+	genDecls = make([]*ast.GenDecl, 0)
+	for _, decl := range astFile.Decls {
+		genDecl, isGenDecl := decl.(*ast.GenDecl)
+		if !isGenDecl || genDecl.Tok != token.TYPE {
+			continue
+		}
+		genDecls = append(genDecls, genDecl)
+	}
+	return
+}
+
+func CollectTypeSpecsFromDecl(genDecl *ast.GenDecl) (typeSpecs []*ast.TypeSpec) {
+	typeSpecs = make([]*ast.TypeSpec, 0)
+	if genDecl.Tok != token.TYPE {
+		return
+	}
+
+	for _, spec := range genDecl.Specs {
+		if typeSpec, ok := spec.(*ast.TypeSpec); ok {
+			typeSpecs = append(typeSpecs, typeSpec)
+		}
+	}
+	return
 }

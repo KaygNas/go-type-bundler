@@ -5,7 +5,6 @@ import (
 	"errors"
 	"go/ast"
 	"go/printer"
-	"go/token"
 	"gotypebundler/internal/pkg/types"
 	"gotypebundler/internal/pkg/utils"
 	"strings"
@@ -59,33 +58,37 @@ func (g *generatorImpl) GeneratePackageClause(pkg *packages.Package) string {
 	return packageClaus
 }
 
+type TypeDeclStoreItem struct {
+	selectorToPkg utils.SelectorToPkg
+	typeDecls     []*ast.GenDecl
+}
+
 func (g *generatorImpl) writePkgTypeDecls(pkg *packages.Package) {
+	store := make([]*TypeDeclStoreItem, 0)
 	for _, astFile := range pkg.Syntax {
-		ast.SortImports(pkg.Fset, astFile)
 		selectorToPkg := utils.CreateSelectorToPkg(astFile, pkg)
-		for _, decl := range astFile.Decls {
-			decl, isGenDecl := decl.(*ast.GenDecl)
+		typeDecls := utils.CollectTypeDeclsFromAstFile(astFile)
+		store = append(store, &TypeDeclStoreItem{
+			selectorToPkg: selectorToPkg,
+			typeDecls:     typeDecls,
+		})
+	}
 
-			if !isGenDecl || decl.Tok != token.TYPE {
-				continue
-			}
+	for _, item := range store {
+		for _, decl := range item.typeDecls {
+			g.setupTypeSpecRenaming(decl)
+		}
+	}
 
-			g.writeTypeDecl(decl, selectorToPkg)
+	for _, item := range store {
+		for _, decl := range item.typeDecls {
+			g.writeTypeDecl(decl, item.selectorToPkg)
 		}
 	}
 }
 
-func (g *generatorImpl) writeTypeDecl(typeDecl *ast.GenDecl, selectorToPkg utils.SelectorToPkg) {
-	typeSpecs := make([]*ast.TypeSpec, 0, len(typeDecl.Specs))
-
-	for _, spec := range typeDecl.Specs {
-		typeSpec, isTypeSpec := spec.(*ast.TypeSpec)
-		if !isTypeSpec {
-			continue
-		}
-		typeSpecs = append(typeSpecs, typeSpec)
-	}
-
+func (g *generatorImpl) setupTypeSpecRenaming(typeDecl *ast.GenDecl) {
+	typeSpecs := utils.CollectTypeSpecsFromDecl(typeDecl)
 	for _, typeSpec := range typeSpecs {
 		// setting up the renaming map
 		oldName := typeSpec.Name.Name
@@ -96,6 +99,10 @@ func (g *generatorImpl) writeTypeDecl(typeDecl *ast.GenDecl, selectorToPkg utils
 			g.ctx.typeSpecRenaming[oldName] = newName
 		}
 	}
+}
+
+func (g *generatorImpl) writeTypeDecl(typeDecl *ast.GenDecl, selectorToPkg utils.SelectorToPkg) {
+	typeSpecs := utils.CollectTypeSpecsFromDecl(typeDecl)
 
 	for _, typeSpec := range typeSpecs {
 		typeSpec.Name.Name = g.ctx.typeSpecRenaming[typeSpec.Name.Name]

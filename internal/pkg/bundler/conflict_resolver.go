@@ -57,16 +57,19 @@ func (cr *conflictResolverImpl) ResolveIdentName(pkgId types.PkgID, name string)
 	newName = name
 
 	if !isNsExist {
+		utils.Warn("Package %s has no namespace", pkgId)
 		return
 	}
 
 	store, isStoreExist := cr.pkgNameSpaceStore[ns]
 	if !isStoreExist {
+		utils.Warn("Namespace %s has no store", ns)
 		return
 	}
 
 	idx, isExistInStore := store[pkgId]
 	if !isExistInStore {
+		utils.Warn("Package %s has no index in store", pkgId)
 		return
 	}
 
