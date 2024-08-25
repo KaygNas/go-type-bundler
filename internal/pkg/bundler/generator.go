@@ -128,6 +128,22 @@ func (g *generatorImpl) convertExpr(expr ast.Expr, selectorToPkg utils.SelectorT
 		return g.convertStructTypeExpr(structType, selectorToPkg)
 	}
 
+	if arrayType, isArrayType := expr.(*ast.ArrayType); isArrayType {
+		arrayType.Elt = g.convertExpr(arrayType.Elt, selectorToPkg)
+		return arrayType
+	}
+
+	if sliceType, isSliceType := expr.(*ast.SliceExpr); isSliceType {
+		sliceType.X = g.convertExpr(sliceType.X, selectorToPkg)
+		return sliceType
+	}
+
+	if mapType, isMapType := expr.(*ast.MapType); isMapType {
+		mapType.Key = g.convertExpr(mapType.Key, selectorToPkg)
+		mapType.Value = g.convertExpr(mapType.Value, selectorToPkg)
+		return mapType
+	}
+
 	// the type spec is rename in the writeTypeDecl function
 	// therefore any ident that was renamed should be rename here
 	if identType, isIdentType := expr.(*ast.Ident); isIdentType {

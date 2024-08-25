@@ -129,6 +129,21 @@ func (c *collectorImpl) collectPkgFromExpr(pkg *packages.Package, expr ast.Expr,
 		return c.collectPkgFromStructTypeExpr(pkg, structType, selectorToPkg)
 	}
 
+	if arrayType, isArrayType := expr.(*ast.ArrayType); isArrayType {
+		return c.collectPkgFromExpr(pkg, arrayType.Elt, selectorToPkg)
+	}
+
+	if sliceType, isSliceType := expr.(*ast.SliceExpr); isSliceType {
+		return c.collectPkgFromExpr(pkg, sliceType.X, selectorToPkg)
+	}
+
+	if mapType, isMapType := expr.(*ast.MapType); isMapType {
+		requiredPkgs := make([]*requiredPkg, 0)
+		requiredPkgs = append(requiredPkgs, c.collectPkgFromExpr(pkg, mapType.Key, selectorToPkg)...)
+		requiredPkgs = append(requiredPkgs, c.collectPkgFromExpr(pkg, mapType.Value, selectorToPkg)...)
+		return requiredPkgs
+	}
+
 	if ident, isIdent := expr.(*ast.Ident); isIdent {
 		requiredPkgs := make([]*requiredPkg, 0)
 		requiredPkgs = append(requiredPkgs, &requiredPkg{
